@@ -2,6 +2,7 @@
 - "Watch" view result display improvements
   - result variables of given expression are now expandable
 - Hide "public", "protected", "private" variable nodes
+- show content of std::vector, std::deque; support display of mi arrays via ```-var-list-children --all-values "..." fromIndex toIndex```
 
 # launch.json sample for cpp application
 ```

@@ -198,6 +198,7 @@ export class MI2 extends EventEmitter implements IBackend {
 		if (this.prettyPrint)
 			cmds.push(this.sendCommand("enable-pretty-printing"));
 		// TODO (tm) setting breakpoint after debug connection is established seems not to work
+		// TODO (tm) std::basic_string content not visible
 		
 		for (let cmd of this.extraCommands) {
 			cmds.push(this.sendCommand(cmd));
@@ -724,8 +725,17 @@ export class MI2 extends EventEmitter implements IBackend {
 	async varListChildren(name: string): Promise<VariableObject[]> {
 		if (trace)
 			this.log("stderr", "varListChildren");
-		//TODO: add `from` and `to` arguments
-		const res = await this.sendCommand(`var-list-children --all-values ${name}`);
+		const res = await this.sendCommand(`var-list-children --all-values "${name}"`);
+		const children = res.result("children") || [];
+		const omg: VariableObject[] = children.map(child => new VariableObject(child[1]));
+		return omg;
+	}
+
+	async arrayVarListChildren(name: string,startIdx: number): Promise<VariableObject[]> {
+		if (trace)
+			this.log("stderr", "varListChildren");
+	  let endIdx:number=startIdx+50;
+		const res = await this.sendCommand(`var-list-children --all-values "${name}" ${startIdx} ${endIdx}`);
 		const children = res.result("children") || [];
 		const omg: VariableObject[] = children.map(child => new VariableObject(child[1]));
 		return omg;

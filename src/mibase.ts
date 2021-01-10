@@ -477,9 +477,34 @@ export class MI2DebugSession extends DebugSession {
 				// Variable members
 				let children: VariableObject[];
 				try {
-					if (id.displayhint==="array") {
-						// TODO (tm) handle array in another way? but how?
-						console.log("TODO");
+					if (id.hasMore===true && id.exp==="[<show more>]") {
+						let fromIdx = id.numchild;
+						let name = id.type;
+						children = await this.miDebugger.arrayVarListChildren(name,fromIdx);
+						if (children.length==50) { // there are more entries available
+							let more = new VariableObject({});
+							more.dynamic=false;
+							more.exp="[<show more>]";
+							more.hasMore=true;
+							more.type=name;
+							more.numchild=fromIdx+children.length;
+							more.name=name+"-more-"+more.numchild;
+							more.value="<show more>";
+							children.push(more); 
+						}
+					}else if (id.displayhint==="array") {
+						children = await this.miDebugger.arrayVarListChildren(id.name,0);
+						if (children.length==50) { // there are more entries available
+							let more = new VariableObject({});
+							more.dynamic=false;
+							more.exp="[<show more>]";
+							more.hasMore=true;
+							more.type=id.name;
+							more.name=id.name+"-more-"+children.length;
+							more.numchild=children.length;
+							more.value="<show more>";
+							children.push(more);
+						}
 					}else{
 						children = await this.miDebugger.varListChildren(id.name);
 						for (let i=children.length-1;i>=0;i--) {
