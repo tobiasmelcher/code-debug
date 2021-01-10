@@ -346,6 +346,24 @@ export class MI2DebugSession extends DebugSession {
 		this.sendResponse(response);
 	}
 
+	protected createVariable(arg, options?): number {
+		if (options)
+			return this.variableHandles.create(new ExtendedVariable(arg, options));
+		else
+			return this.variableHandles.create(arg);
+	};
+
+	protected findOrCreateVariable(varObj: VariableObject): number {
+		let id: number;
+		if (this.variableHandlesReverse.hasOwnProperty(varObj.name)) {
+			id = this.variableHandlesReverse[varObj.name];
+		} else {
+			id = this.createVariable(varObj);
+			this.variableHandlesReverse[varObj.name] = id;
+		}
+		return varObj.isCompound() ? id : 0;
+	};
+
 	protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments): Promise<void> {
 		const variables: DebugProtocol.Variable[] = [];
 		let id: number | string | VariableObject | ExtendedVariable;
@@ -354,24 +372,6 @@ export class MI2DebugSession extends DebugSession {
 		} else {
 			id = this.variableHandles.get(args.variablesReference);
 		}
-
-		const createVariable = (arg, options?) => {
-			if (options)
-				return this.variableHandles.create(new ExtendedVariable(arg, options));
-			else
-				return this.variableHandles.create(arg);
-		};
-
-		const findOrCreateVariable = (varObj: VariableObject): number => {
-			let id: number;
-			if (this.variableHandlesReverse.hasOwnProperty(varObj.name)) {
-				id = this.variableHandlesReverse[varObj.name];
-			} else {
-				id = createVariable(varObj);
-				this.variableHandlesReverse[varObj.name] = id;
-			}
-			return varObj.isCompound() ? id : 0;
-		};
 
 		if (typeof id == "number") {
 			let stack: Variable[];
@@ -397,7 +397,7 @@ export class MI2DebugSession extends DebugSession {
 							} catch (err) {
 								if (err instanceof MIError && err.message == "Variable object not found") {
 									varObj = await this.miDebugger.varCreate(variable.name, varObjName);
-									const varId = findOrCreateVariable(varObj);
+									const varId = this.findOrCreateVariable(varObj);
 									varObj.exp = variable.name;
 									varObj.id = varId;
 								} else {
@@ -414,7 +414,7 @@ export class MI2DebugSession extends DebugSession {
 						}
 					} else {
 						if (variable.valueStr !== undefined) {
-							let expanded = expandValue(createVariable, `{${variable.name}=${variable.valueStr})`, "", variable.raw);
+							let expanded = expandValue(this.createVariable, `{${variable.name}=${variable.valueStr})`, "", variable.raw);
 							if (expanded) {
 								if (typeof expanded[0] == "string")
 									expanded = [
@@ -431,7 +431,7 @@ export class MI2DebugSession extends DebugSession {
 								name: variable.name,
 								type: variable.type,
 								value: "<unknown>",
-								variablesReference: createVariable(variable.name)
+								variablesReference: this.createVariable(variable.name)
 							});
 					}
 				}
@@ -449,7 +449,7 @@ export class MI2DebugSession extends DebugSession {
 				// TODO: this evals on an (effectively) unknown thread for multithreaded programs.
 				variable = await this.miDebugger.evalExpression(JSON.stringify(id), 0, 0);
 				try {
-					let expanded = expandValue(createVariable, variable.result("value"), id, variable);
+					let expanded = expandValue(this.createVariable, variable.result("value"), id, variable);
 					if (!expanded) {
 						this.sendErrorResponse(response, 2, `Could not expand variable`);
 					} else {
@@ -477,9 +477,24 @@ export class MI2DebugSession extends DebugSession {
 				// Variable members
 				let children: VariableObject[];
 				try {
-					children = await this.miDebugger.varListChildren(id.name);
+					if (id.displayhint==="array") {
+						// TODO (tm) handle array in another way? but how?
+						console.log("TODO");
+					}else{
+						children = await this.miDebugger.varListChildren(id.name);
+						for (let i=children.length-1;i>=0;i--) {
+							let child = children[i];
+							if (child.exp=="protected" || child.exp=="private" || child.exp=="public") {
+								let subChildren = await this.miDebugger.varListChildren(child.name);
+								children.splice(i,1); // remove element from array
+								if (subChildren.length>0) {
+									children = children.concat(subChildren);
+								}
+							}
+						}
+				  }
 					const vars = children.map(child => {
-						const varId = findOrCreateVariable(child);
+						const varId = this.findOrCreateVariable(child);
 						child.id = varId;
 						return child.toProtocolVariable();
 					});
@@ -507,7 +522,7 @@ export class MI2DebugSession extends DebugSession {
 						// TODO: this evals on an (effectively) unknown thread for multithreaded programs.
 						const variable = await this.miDebugger.evalExpression(JSON.stringify(`${varReq.name}+${arrIndex})`), 0, 0);
 						try {
-							const expanded = expandValue(createVariable, variable.result("value"), varReq.name, variable);
+							const expanded = expandValue(this.createVariable, variable.result("value"), varReq.name, variable);
 							if (!expanded) {
 								this.sendErrorResponse(response, 15, `Could not expand variable`);
 							} else {
@@ -620,6 +635,21 @@ export class MI2DebugSession extends DebugSession {
 	protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
 		const [threadId, level] = this.frameIdToThreadAndLevel(args.frameId);
 		if (args.context == "watch" || args.context == "hover") {
+			// use variable instead evalExpression - expression are also supported via varCreate
+			this.miDebugger.varCreate(args.expression).then((res)=> {
+				const varId  = this.findOrCreateVariable(res);
+				// TODO (tm) remove template <...> content in valueWithType
+				const valueWithType = res.type+"-"+res.value; // I want to see the type immediately, not only on mouse hover variable name				
+				response.body = {
+					type: res.type,
+					variablesReference: varId,
+					result: valueWithType // JSON.stringify(res)
+				};
+				this.sendResponse(response);
+			}, errorMsg=> {
+				this.sendErrorResponse(response,7,errorMsg.toString());
+			});
+			/*
 			this.miDebugger.evalExpression(args.expression, threadId, level).then((res) => {
 				response.body = {
 					variablesReference: 0,
@@ -628,7 +658,7 @@ export class MI2DebugSession extends DebugSession {
 				this.sendResponse(response);
 			}, msg => {
 				this.sendErrorResponse(response, 7, msg.toString());
-			});
+			});*/
 		} else {
 			this.miDebugger.sendUserInput(args.expression, threadId, level).then(output => {
 				if (typeof output == "undefined")

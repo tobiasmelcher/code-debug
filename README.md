@@ -1,3 +1,22 @@
+# Changes done by me
+- "Watch" view result display improvements
+  - result variables of given expression are now expandable
+- Hide "public", "protected", "private" variable nodes
+
+# launch.json sample for cpp application
+```
+{
+  "name": "Debug",
+  "type": "gdb",
+  "request": "launch",
+  "target": "<path to application>",
+  "cwd": "<working directory>",
+  "valuesFormatting": "prettyPrinters",
+  "autorun": ["set env LD_LIBRARY_PATH=<path>"]
+}
+```
+use "autorun" attribute to set LD_LIBRARY_PATH as shown above
+
 # Debug
 
 Native VSCode debugger. Supports both GDB and LLDB.

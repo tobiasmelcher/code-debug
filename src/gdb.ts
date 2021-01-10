@@ -36,7 +36,7 @@ export interface AttachRequestArguments extends DebugProtocol.AttachRequestArgum
 	showDevDebugOutput: boolean;
 }
 
-class GDBDebugSession extends MI2DebugSession {
+export class GDBDebugSession extends MI2DebugSession {
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
 		response.body.supportsGotoTargetsRequest = true;
 		response.body.supportsHitConditionalBreakpoints = true;
@@ -192,4 +192,4 @@ class GDBDebugSession extends MI2DebugSession {
 	}
 }
 
-DebugSession.run(GDBDebugSession);
+//DebugSession.run(GDBDebugSession);

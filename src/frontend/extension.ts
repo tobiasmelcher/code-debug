@@ -3,8 +3,23 @@ import * as net from "net";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
+import { debug } from "util";
+import { GDBDebugSession } from "../gdb";
+
+class MyFactory implements vscode.DebugAdapterDescriptorFactory{
+	createDebugAdapterDescriptor(session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
+		return new vscode.DebugAdapterInlineImplementation(new GDBDebugSession(true));
+	}
+}
+
+// activationEvents
+		/*"onStartupFinished",
+		"onCommand:code-debug.examineMemoryLocation",
+		"onCommand:code-debug.getFileNameNoExt",
+		"onCommand:code-debug.getFileBasenameNoExt"*/
 
 export function activate(context: vscode.ExtensionContext) {
+	vscode.debug.registerDebugAdapterDescriptorFactory("gdb",new MyFactory());
 	context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider("debugmemory", new MemoryContentProvider()));
 	context.subscriptions.push(vscode.commands.registerCommand("code-debug.examineMemoryLocation", examineMemory));
 	context.subscriptions.push(vscode.commands.registerCommand("code-debug.getFileNameNoExt", () => {

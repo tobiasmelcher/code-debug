@@ -27,7 +27,7 @@ function couldBeOutput(line: string) {
 const trace = false;
 
 export class MI2 extends EventEmitter implements IBackend {
-	constructor(public application: string, public preargs: string[], public extraargs: string[], procEnv: any, public extraCommands: string[] = []) {
+	constructor(public application: string, public preargs: string[], public extraargs: string[], procEnv: any, public extraCommands: string[] = []/*,public extraGdbRawCommands: string[] = []*/) {
 		super();
 
 		if (procEnv) {
@@ -53,7 +53,7 @@ export class MI2 extends EventEmitter implements IBackend {
 	load(cwd: string, target: string, procArgs: string, separateConsole: string): Thenable<any> {
 		if (!nativePath.isAbsolute(target))
 			target = nativePath.join(cwd, target);
-		return new Promise((resolve, reject) => {
+		return new Promise<void>((resolve, reject) => {
 			this.isSSH = false;
 			const args = this.preargs.concat(this.extraargs || []);
 			this.process = ChildProcess.spawn(this.application, args, { cwd: cwd, env: this.procEnv });
@@ -91,7 +91,7 @@ export class MI2 extends EventEmitter implements IBackend {
 	}
 
 	ssh(args: SSHArguments, cwd: string, target: string, procArgs: string, separateConsole: string, attach: boolean): Thenable<any> {
-		return new Promise((resolve, reject) => {
+		return new Promise<void>((resolve, reject) => {
 			this.isSSH = true;
 			this.sshReady = false;
 			this.sshConn = new Client();
@@ -197,15 +197,20 @@ export class MI2 extends EventEmitter implements IBackend {
 			cmds.push(this.sendCommand("file-exec-and-symbols \"" + escape(target) + "\""));
 		if (this.prettyPrint)
 			cmds.push(this.sendCommand("enable-pretty-printing"));
+		// TODO (tm) setting breakpoint after debug connection is established seems not to work
+		
 		for (let cmd of this.extraCommands) {
 			cmds.push(this.sendCommand(cmd));
 		}
-
+		/*
+		for (let cmd of this.extraGdbRawCommands) {
+			this.sendRaw(cmd);
+		}*/
 		return cmds;
 	}
 
 	attach(cwd: string, executable: string, target: string): Thenable<any> {
-		return new Promise((resolve, reject) => {
+		return new Promise<void>((resolve, reject) => {
 			let args = [];
 			if (executable && !nativePath.isAbsolute(executable))
 				executable = nativePath.join(cwd, executable);
@@ -238,7 +243,7 @@ export class MI2 extends EventEmitter implements IBackend {
 	}
 
 	connect(cwd: string, executable: string, target: string): Thenable<any> {
-		return new Promise((resolve, reject) => {
+		return new Promise<void>((resolve, reject) => {
 			let args = [];
 			if (executable && !nativePath.isAbsolute(executable))
 				executable = nativePath.join(cwd, executable);
@@ -385,12 +390,12 @@ export class MI2 extends EventEmitter implements IBackend {
 	}
 
 	start(): Thenable<boolean> {
-		return new Promise((resolve, reject) => {
+		return new Promise<boolean>((resolve, reject) => {
 			this.once("ui-break-done", () => {
 				this.log("console", "Running executable");
 				this.sendCommand("exec-run").then((info) => {
 					if (info.resultRecords.resultClass == "running")
-						resolve();
+						resolve(true);
 					else
 						reject();
 				}, reject);

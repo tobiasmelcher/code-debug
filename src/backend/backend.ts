@@ -1,5 +1,6 @@
 import { MINode } from "./mi_parse";
 import { DebugProtocol } from "vscode-debugprotocol/lib/debugProtocol";
+import { isNullOrUndefined } from "util";
 
 export type ValuesFormattingMode = "disabled" | "parseText" | "prettyPrinters";
 
@@ -117,10 +118,15 @@ export class VariableObject {
 	}
 
 	public toProtocolVariable(): DebugProtocol.Variable {
+		let valueString:string=""; // i want to see the type immediately without moving the mouse over the variable name
+		if (isNullOrUndefined(this.type)===false && this.exp!=this.type) {
+			valueString=this.type+"-"; // TODO (tm) remove template arguments?
+		}
+		valueString+=this.value;
 		const res: DebugProtocol.Variable = {
 			name: this.exp,
 			evaluateName: this.name,
-			value: (this.value === void 0) ? "<unknown>" : this.value,
+			value: (this.value === void 0) ? "<unknown>" : valueString,
 			type: this.type,
 			variablesReference: this.id
 		};

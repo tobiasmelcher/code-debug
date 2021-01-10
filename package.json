@@ -18,9 +18,7 @@
 	},
 	"main": "./out/src/frontend/extension",
 	"activationEvents": [
-		"onCommand:code-debug.examineMemoryLocation",
-		"onCommand:code-debug.getFileNameNoExt",
-		"onCommand:code-debug.getFileBasenameNoExt"
+		"*"
 	],
 	"categories": [
 		"Debuggers"
@@ -39,12 +37,10 @@
 		"debuggers": [
 			{
 				"type": "gdb",
-				"extensions": [],
 				"program": "./out/src/gdb.js",
 				"runtime": "node",
 				"label": "GDB",
-				"enableBreakpointsFor": {
-					"languageIds": [
+				"languages": [
 						"c",
 						"cpp",
 						"d",
@@ -65,8 +61,7 @@
 						"crystal",
 						"kotlin",
 						"zig"
-					]
-				},
+					],
 				"variables": {
 					"FileBasenameNoExt": "code-debug.getFileBasenameNoExt",
 					"FileNameNoExt": "code-debug.getFileNameNoExt"
@@ -456,7 +451,6 @@
 			},
 			{
 				"type": "lldb-mi",
-				"extensions": [],
 				"program": "./out/src/lldb.js",
 				"runtime": "node",
 				"label": "LLDB",
@@ -464,8 +458,7 @@
 					"FileBasenameNoExt": "code-debug.getFileBasenameNoExt",
 					"FileNameNoExt": "code-debug.getFileNameNoExt"
 				},
-				"enableBreakpointsFor": {
-					"languageIds": [
+				"languages": [
 						"c",
 						"ada",
 						"cpp",
@@ -496,7 +489,7 @@
 						"kotlin",
 						"zig"
 					]
-				},
+				,
 				"configurationAttributes": {
 					"launch": {
 						"required": [
@@ -775,7 +768,6 @@
 			},
 			{
 				"type": "mago-mi",
-				"extensions": [],
 				"program": "./out/src/mago.js",
 				"runtime": "node",
 				"label": "Mago-MI",
@@ -783,11 +775,9 @@
 					"FileBasenameNoExt": "code-debug.getFileBasenameNoExt",
 					"FileNameNoExt": "code-debug.getFileNameNoExt"
 				},
-				"enableBreakpointsFor": {
-					"languageIds": [
+				"languages":  [
 						"d"
-					]
-				},
+					],
 				"configurationAttributes": {
 					"launch": {
 						"required": [
@@ -953,9 +943,9 @@
 		"compile": "tsc -watch -p ./"
 	},
 	"dependencies": {
+		"ssh2": "^0.8.9",
 		"vscode-debugadapter": "^1.40.0",
-		"vscode-debugprotocol": "^1.40.0",
-		"ssh2": "^0.8.9"
+		"vscode-debugprotocol": "^1.40.0"
 	},
 	"devDependencies": {
 		"@types/mocha": "^5.2.6",
