@@ -10,6 +10,7 @@ import * as systemPath from "path";
 import * as net from "net";
 import * as os from "os";
 import * as fs from "fs";
+// import { GDBDebugSession } from './gdb';
 
 const resolve = posix.resolve;
 const relative = posix.relative;
@@ -164,6 +165,8 @@ export class MI2DebugSession extends DebugSession {
 	}
 
 	protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments): void {
+		// user pressed stop button
+		//GDBDebugSession.LAST_SESSION=null;
 		if (this.attached)
 			this.miDebugger.detach();
 		else
@@ -663,7 +666,6 @@ export class MI2DebugSession extends DebugSession {
 			// use variable instead evalExpression - expression are also supported via varCreate
 			this.miDebugger.varCreate(args.expression).then((res)=> {
 				const varId  = this.findOrCreateVariable(res);
-				// TODO (tm) remove template <...> content in valueWithType
 				const valueWithType = res.type+"-"+res.value; // I want to see the type immediately, not only on mouse hover variable name				
 				response.body = {
 					type: res.type,

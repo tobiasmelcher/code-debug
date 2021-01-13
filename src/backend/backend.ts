@@ -120,11 +120,17 @@ export class VariableObject {
 	public toProtocolVariable(): DebugProtocol.Variable {
 		let valueString:string=""; // i want to see the type immediately without moving the mouse over the variable name
 		if (isNullOrUndefined(this.type)===false && this.exp!=this.type) {
-			valueString=this.type+"-"; // TODO (tm) remove template arguments?
+			valueString=this.type+"-";
+		}
+		let name = this.exp;
+		if (name.length>50) {
+			// remove all templates from display name 
+			// reduce length of std::__cxx11::basic_string<...> - it got so long that string value was not visible
+			name=name.replace(/<.*>/g,""); 
 		}
 		valueString+=this.value;
 		const res: DebugProtocol.Variable = {
-			name: this.exp,
+			name: name,
 			evaluateName: this.name,
 			value: (this.value === void 0) ? "<unknown>" : valueString,
 			type: this.type,

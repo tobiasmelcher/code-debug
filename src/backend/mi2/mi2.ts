@@ -193,12 +193,15 @@ export class MI2 extends EventEmitter implements IBackend {
 			this.sendCommand("gdb-set target-async on", true),
 			this.sendCommand("environment-directory \"" + escape(cwd) + "\"", true)
 		];
+		// print object on
+		this.sendRaw("-gdb-set print object on");
 		if (!attach)
 			cmds.push(this.sendCommand("file-exec-and-symbols \"" + escape(target) + "\""));
+	  
 		if (this.prettyPrint)
 			cmds.push(this.sendCommand("enable-pretty-printing"));
-		// TODO (tm) setting breakpoint after debug connection is established seems not to work
-		// TODO (tm) std::basic_string content not visible
+		// TODO (tm) provide action to print full string value of variable in terminal or console (scenario: multi line strings)
+		// does rerun debug button work fine - are symbols hopefully not reloaded each time? No. But not needed, use "run" command in debug console.
 		
 		for (let cmd of this.extraCommands) {
 			cmds.push(this.sendCommand(cmd));

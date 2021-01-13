@@ -37,6 +37,7 @@ export interface AttachRequestArguments extends DebugProtocol.AttachRequestArgum
 }
 
 export class GDBDebugSession extends MI2DebugSession {
+	//public static LAST_SESSION:GDBDebugSession=null; 
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
 		response.body.supportsGotoTargetsRequest = true;
 		response.body.supportsHitConditionalBreakpoints = true;
@@ -50,6 +51,13 @@ export class GDBDebugSession extends MI2DebugSession {
 	}
 
 	protected launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): void {
+		// not needed; use "run" command in debug console to re-run
+		/*
+		if (GDBDebugSession.LAST_SESSION!=null) {
+			GDBDebugSession.LAST_SESSION.miDebugger.sendRaw("run");
+			return;
+		}
+		*/
 		this.miDebugger = new MI2(args.gdbpath || "gdb", ["-q", "--interpreter=mi2"], args.debugger_args, args.env);
 		this.setPathSubstitutions(args.pathSubstitutions);
 		this.initDebugger();
@@ -117,6 +125,7 @@ export class GDBDebugSession extends MI2DebugSession {
 				this.sendErrorResponse(response, 103, `Failed to load MI Debugger: ${err.toString()}`);
 			});
 		}
+		//GDBDebugSession.LAST_SESSION=this; 
 	}
 
 	protected attachRequest(response: DebugProtocol.AttachResponse, args: AttachRequestArguments): void {
