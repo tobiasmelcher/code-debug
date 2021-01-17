@@ -10,7 +10,9 @@ import * as systemPath from "path";
 import * as net from "net";
 import * as os from "os";
 import * as fs from "fs";
-// import { GDBDebugSession } from './gdb';
+import { GDBDebugSession } from './gdb';
+import { downloadAndUnzipVSCode } from 'vscode-test';
+import * as vscode from "vscode";
 
 const resolve = posix.resolve;
 const relative = posix.relative;
@@ -43,7 +45,9 @@ export class MI2DebugSession extends DebugSession {
 	public constructor(debuggerLinesStartAt1: boolean, isServer: boolean = false) {
 		super(debuggerLinesStartAt1, isServer);
 	}
-
+  public getMiDebugger():MI2 {
+		return this.miDebugger;
+	}
 	protected initDebugger() {
 		this.miDebugger.on("launcherror", this.launchError.bind(this));
 		this.miDebugger.on("quit", this.quitEvent.bind(this));
@@ -166,7 +170,7 @@ export class MI2DebugSession extends DebugSession {
 
 	protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments): void {
 		// user pressed stop button
-		//GDBDebugSession.LAST_SESSION=null;
+		GDBDebugSession.LAST_SESSION=null;
 		if (this.attached)
 			this.miDebugger.detach();
 		else
@@ -308,9 +312,17 @@ export class MI2DebugSession extends DebugSession {
 							file = file[10] + ":" + file.substr(11); // replaces /cygdrive/c/foo/bar.txt with c:/foo/bar.txt
 						}
 					}
-					source = new Source(element.fileName, file);
+					// create source only when it is part of the workspace folder - if this is not done debugging huge server process did not work for me
+					if (vscode.workspace.workspaceFolders.length>0) {
+						for (var f in vscode.workspace.workspaceFolders) {
+							let p = vscode.workspace.workspaceFolders[f].uri.path;
+							if (file.startsWith(p)) {
+								source = new Source(element.fileName, file);
+								break;
+							}
+						}
+					}
 				}
-
 				ret.push(new StackFrame(
 					this.threadAndLevelToFrameId(args.threadId, element.level),
 					element.function + "@" + element.address,
@@ -377,6 +389,8 @@ export class MI2DebugSession extends DebugSession {
 		}
 
 		if (typeof id == "number") {
+			// don't get stack variables because too slow
+			/*
 			let stack: Variable[];
 			try {
 				const [threadId, level] = this.frameIdToThreadAndLevel(id);
@@ -444,7 +458,12 @@ export class MI2DebugSession extends DebugSession {
 				this.sendResponse(response);
 			} catch (err) {
 				this.sendErrorResponse(response, 1, `Could not expand variable: ${err}`);
-			}
+			}*/
+			// send empty result instead
+			response.body = {
+				variables: variables
+			};
+			this.sendResponse(response);
 		} else if (typeof id == "string") {
 			// Variable members
 			let variable;
@@ -495,7 +514,7 @@ export class MI2DebugSession extends DebugSession {
 							more.value="<show more>";
 							children.push(more); 
 						}
-					}else if (id.displayhint==="array") {
+					}else if (id.displayhint==="array" || id.displayhint=="map") {
 						children = await this.miDebugger.arrayVarListChildren(id.name,0);
 						if (children.length==50) { // there are more entries available
 							let more = new VariableObject({});

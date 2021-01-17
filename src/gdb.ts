@@ -37,7 +37,8 @@ export interface AttachRequestArguments extends DebugProtocol.AttachRequestArgum
 }
 
 export class GDBDebugSession extends MI2DebugSession {
-	//public static LAST_SESSION:GDBDebugSession=null; 
+	public static LAST_SESSION:GDBDebugSession=null; 
+	public static USE_PID:string=null;
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
 		response.body.supportsGotoTargetsRequest = true;
 		response.body.supportsHitConditionalBreakpoints = true;
@@ -125,7 +126,7 @@ export class GDBDebugSession extends MI2DebugSession {
 				this.sendErrorResponse(response, 103, `Failed to load MI Debugger: ${err.toString()}`);
 			});
 		}
-		//GDBDebugSession.LAST_SESSION=this; 
+		GDBDebugSession.LAST_SESSION=this; 
 	}
 
 	protected attachRequest(response: DebugProtocol.AttachResponse, args: AttachRequestArguments): void {
@@ -178,6 +179,10 @@ export class GDBDebugSession extends MI2DebugSession {
 					this.sendErrorResponse(response, 102, `Failed to attach: ${err.toString()}`);
 				});
 			} else {
+				if (GDBDebugSession.USE_PID!=null) {
+					args.target=GDBDebugSession.USE_PID;
+					GDBDebugSession.USE_PID=null; // used it once - reset static variable
+				}
 				this.miDebugger.attach(args.cwd, args.executable, args.target).then(() => {
 					if (args.autorun)
 						args.autorun.forEach(command => {

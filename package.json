@@ -32,6 +32,10 @@
 			{
 				"command": "code-debug.examineMemoryLocation",
 				"title": "Code-Debug: Examine memory location"
+			},
+			{
+				"command": "gdb.showStringInConsole",
+				"title": "Code-Debug: show string in console"
 			}
 		],
 		"debuggers": [

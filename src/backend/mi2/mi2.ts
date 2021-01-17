@@ -193,14 +193,13 @@ export class MI2 extends EventEmitter implements IBackend {
 			this.sendCommand("gdb-set target-async on", true),
 			this.sendCommand("environment-directory \"" + escape(cwd) + "\"", true)
 		];
-		// print object on
-		this.sendRaw("-gdb-set print object on");
+		// this should not be necessary when "set print object on" is part of .gdbinit file
+		//this.sendRaw("-gdb-set print object on");
 		if (!attach)
 			cmds.push(this.sendCommand("file-exec-and-symbols \"" + escape(target) + "\""));
 	  
 		if (this.prettyPrint)
 			cmds.push(this.sendCommand("enable-pretty-printing"));
-		// TODO (tm) provide action to print full string value of variable in terminal or console (scenario: multi line strings)
 		// does rerun debug button work fine - are symbols hopefully not reloaded each time? No. But not needed, use "run" command in debug console.
 		
 		for (let cmd of this.extraCommands) {
@@ -232,7 +231,7 @@ export class MI2 extends EventEmitter implements IBackend {
 			this.process.on("exit", (() => { this.emit("quit"); }).bind(this));
 			this.process.on("error", ((err) => { this.emit("launcherror", err); }).bind(this));
 			const commands = [
-				this.sendCommand("gdb-set target-async on"),
+				// this.sendCommand("gdb-set target-async on"), // fails on my machine, disable it
 				this.sendCommand("environment-directory \"" + escape(cwd) + "\"")
 			];
 			if (isExtendedRemote) {

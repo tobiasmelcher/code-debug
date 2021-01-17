@@ -127,6 +127,10 @@ export class VariableObject {
 			// remove all templates from display name 
 			// reduce length of std::__cxx11::basic_string<...> - it got so long that string value was not visible
 			name=name.replace(/<.*>/g,""); 
+			let idx = name.lastIndexOf("::"); // remove also namespace
+			if (idx>0) {
+				name = name.substring(idx+2);
+			}
 		}
 		valueString+=this.value;
 		const res: DebugProtocol.Variable = {

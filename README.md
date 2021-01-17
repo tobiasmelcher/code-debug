@@ -3,6 +3,11 @@
   - result variables of given expression are now expandable
 - Hide "public", "protected", "private" variable nodes
 - show content of std::vector, std::deque; support display of mi arrays via ```-var-list-children --all-values "..." fromIndex toIndex```
+- add command "gdb.showStringInConsole" which allows to print a string variable in debug console; helps in case of multiline strings
+- attaching to running process did not work for me when a stack entry points to a file outside the workspace folder; this is now fixed (integration not the best)
+- "gdb-set target-async on" failed when attaching to a large executable; I therefore disabled it
+- listen additionaly on port 4567 and accept uri in form of /pid/process_id -> running "wget localhost/pid/123" is then launching the debugger with config name "gdb_attach" and attaching to port 123
+
 
 # launch.json sample for cpp application
 ```

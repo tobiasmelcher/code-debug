@@ -5,6 +5,9 @@ import * as path from "path";
 import * as os from "os";
 import { debug } from "util";
 import { GDBDebugSession } from "../gdb";
+import { MINode } from "../backend/mi_parse";
+import { createServer, IncomingMessage, ServerResponse } from "http";
+import { parse } from "url";
 
 class MyFactory implements vscode.DebugAdapterDescriptorFactory{
 	createDebugAdapterDescriptor(session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
@@ -17,6 +20,26 @@ class MyFactory implements vscode.DebugAdapterDescriptorFactory{
 		"onCommand:code-debug.examineMemoryLocation",
 		"onCommand:code-debug.getFileNameNoExt",
 		"onCommand:code-debug.getFileBasenameNoExt"*/
+
+function startHttpServer() {
+	const server = createServer((request: IncomingMessage, response: ServerResponse) => {
+		if (vscode.workspace.workspaceFolders!=undefined && vscode.workspace.workspaceFolders.length>0) {
+			let folder = vscode.workspace.workspaceFolders[0];
+			let u = request.url;
+			if (u.startsWith("/pid/")) {
+				let ind = u.lastIndexOf("/");
+				let pid = u.substring(ind+1);
+				vscode.window.showInformationMessage("pid is "+pid+". Running debug config 'gdb_attach'.");
+				GDBDebugSession.USE_PID=pid;
+				vscode.debug.startDebugging(folder,"gdb_attach");
+			}
+		}
+		response.end('done'); // wget <hostname>:4567 works fine
+	});
+	server.listen(/*port*/4567, () => {
+		console.log("listening listener");
+	});
+}
 
 export function activate(context: vscode.ExtensionContext) {
 	vscode.debug.registerDebugAdapterDescriptorFactory("gdb",new MyFactory());
@@ -40,6 +63,45 @@ export function activate(context: vscode.ExtensionContext) {
 		const ext = path.extname(fileName);
 		return fileName.substr(0, fileName.length - ext.length);
 	}));
+	context.subscriptions.push(vscode.commands.registerCommand("gdb.showStringInConsole",()=>{
+		// idea: user has first to select variable and press then Ctrl-c -> we get it then from the clipboard
+		vscode.env.clipboard.readText().then(str => {
+			// char *-0x555556d198a0
+			let ind = str.indexOf("-");
+			if (ind<0){
+				str=str.replace(/\\n/g,"\n");
+				GDBDebugSession.LAST_SESSION.getMiDebugger().log("console", str);
+				return;
+			}
+			let type = str.substring(0,ind);
+			let rest = str.substring(ind+1).trim();
+			ind = rest.indexOf(" ");
+			if (ind>0) {
+				rest = rest.substring(0,ind);
+			}
+			if (rest.startsWith("0x")) {
+				let addr = rest;
+				let gdbRequest = "("+type+")"+addr;
+				if (GDBDebugSession.LAST_SESSION!=null) {
+					GDBDebugSession.LAST_SESSION.getMiDebugger().varCreate(gdbRequest).then((info)=>{
+						let r = info.value;
+						r=r.replace(/\\n/g,"\n");
+						GDBDebugSession.LAST_SESSION.getMiDebugger().log("console", r);
+					});
+				}
+			}else{
+				str=str.replace(/\\n/g,"\n");
+				GDBDebugSession.LAST_SESSION.getMiDebugger().log("console", str);
+			}
+			/*
+			vscode.window.showInputBox().then(input =>{
+				console.log(input);
+			});
+			*/
+		});
+		return; 
+	}));
+	startHttpServer();
 }
 
 const memoryLocationRegex = /^0x[0-9a-f]+$/;
