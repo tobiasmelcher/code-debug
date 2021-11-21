@@ -238,6 +238,9 @@ export class MI2 extends EventEmitter implements IBackend {
 				commands.push(this.sendCommand("target-select " + target));
 				commands.push(this.sendCommand("file-symbol-file \"" + escape(executable) + "\""));
 			}
+			if (this.prettyPrint) {
+				commands.push(this.sendCommand("enable-pretty-printing"));
+			}
 			Promise.all(commands).then(() => {
 				this.emit("debug-ready");
 				resolve();
