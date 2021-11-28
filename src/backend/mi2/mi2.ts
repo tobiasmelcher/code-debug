@@ -323,8 +323,8 @@ export class MI2 extends EventEmitter implements IBackend {
 		return false;
 	}
 
-	onOutput(lines) {
-		lines = <string[]> lines.split('\n');
+	onOutput(lines) { // tm: hier you can see the unfiltered output of the gdb command
+		lines = <string[]> lines.split('\n'); 
 		lines.forEach(line => {
 			if (couldBeOutput(line)) {
 				if (!gdbMatch.exec(line))

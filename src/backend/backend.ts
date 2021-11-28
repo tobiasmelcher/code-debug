@@ -133,6 +133,17 @@ export class VariableObject {
 			}
 		}
 		valueString+=this.value;
+		// retrieve here the additional info via the displayhint if it contains a string like sequence starting with double quotes
+		if (this.displayhint!=null && this.displayhint.length>0) {
+			let s = this.displayhint.indexOf("\"");
+			if (s>0) {
+				let e = this.displayhint.indexOf("\"",s+1);
+				if (e>s) {
+					let sub = this.displayhint.substring(s,e+1);
+					valueString+=sub;
+				}
+			}
+		}
 		const res: DebugProtocol.Variable = {
 			name: name,
 			evaluateName: this.name,

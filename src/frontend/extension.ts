@@ -40,7 +40,6 @@ function startHttpServer() {
 		console.log("listening listener");
 	});
 }
-
 export function activate(context: vscode.ExtensionContext) {
 	vscode.debug.registerDebugAdapterDescriptorFactory("gdb",new MyFactory());
 	context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider("debugmemory", new MemoryContentProvider()));

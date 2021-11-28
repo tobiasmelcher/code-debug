@@ -9,6 +9,8 @@
 - listen additionaly on port 4567 and accept uri in form of /pid/process_id -> running "wget localhost/pid/123" is then launching the debugger with config name "gdb_attach" and attaching to port 123
 - package via command "vsce package"
 DONE: pretty printing was not working in attach scenario. Reason: - gdb command enable-pretty print was missing
+- "tsc -watch -p ./" in root folder for typescript development
+- debugging of typescript on the remote machine is working fine with the old vscode; but not with the new one from oct 2021 - why?
 
 # launch.json sample for cpp application
 ```
