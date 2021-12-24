@@ -821,7 +821,7 @@ export class MI2 extends EventEmitter implements IBackend {
 	protected sshReady: boolean;
 	protected currentToken: number = 1;
 	protected handlers: { [index: number]: (info: MINode) => any } = {};
-	protected breakpoints: Map<Breakpoint, Number> = new Map();
+	public breakpoints: Map<Breakpoint, Number> = new Map();
 	protected buffer: string;
 	protected errbuf: string;
 	protected process: ChildProcess.ChildProcess;

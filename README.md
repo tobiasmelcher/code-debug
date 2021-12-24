@@ -11,6 +11,9 @@
 DONE: pretty printing was not working in attach scenario. Reason: - gdb command enable-pretty print was missing
 - "tsc -watch -p ./" in root folder for typescript development
 - debugging of typescript on the remote machine is working fine with the old vscode; but not with the new one from oct 2021 - why?
+- "npm install" to get install dependencies
+- fixed adding/removing breakpoint when multiple breakpoints across multiple files are initially set
+- TODO: variables cannot be inspected when drilling down the stack
 
 # launch.json sample for cpp application
 ```

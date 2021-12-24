@@ -235,6 +235,39 @@ export class MI2DebugSession extends DebugSession {
 	protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): void {
 		const cb = (() => {
 			this.debugReady = true;
+			if (this.miDebugger.breakpoints.size>0) {
+				let path = args.source.path;
+				let breakpointFound=false;
+				for (let key of this.miDebugger.breakpoints.keys()) {
+					let fn = key.file;
+					if (path==fn) {
+						breakpointFound=true;
+						this.miDebugger.removeBreakPoint(key);
+					}
+				}
+				if (breakpointFound) {
+					// now deleted all breakpoints on given file
+					const all = args.breakpoints.map(brk => {
+						return this.miDebugger.addBreakPoint({ file: path, line: brk.line, condition: brk.condition, countCondition: brk.hitCondition });
+					});
+					Promise.all(all).then(brkpoints => {
+						const finalBrks = [];
+						brkpoints.forEach(brkp => {
+							// TODO: Currently all breakpoints returned are marked as verified,
+							// which leads to verified breakpoints on a broken lldb.
+							if (brkp[0])
+								finalBrks.push(new DebugAdapter.Breakpoint(true, brkp[1].line));
+						});
+						response.body = {
+							breakpoints: finalBrks
+						};
+						this.sendResponse(response);
+					}, msg => {
+						this.sendErrorResponse(response, 9, msg.toString());
+					});
+					return;
+				}
+		  }
 			this.miDebugger.clearBreakPoints().then(() => {
 				let path = args.source.path;
 				if (this.isSSH) {
