@@ -233,40 +233,37 @@ export class MI2DebugSession extends DebugSession {
 	}
 
 	protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): void {
-		const cb = (() => {
+		const cb = ((ready:Boolean) => {
 			this.debugReady = true;
-			if (this.miDebugger.breakpoints.size>0) {
+			if (ready) {
+				// delete all breakpoints on given file
 				let path = args.source.path;
-				let breakpointFound=false;
 				for (let key of this.miDebugger.breakpoints.keys()) {
 					let fn = key.file;
 					if (path==fn) {
-						breakpointFound=true;
 						this.miDebugger.removeBreakPoint(key);
 					}
-				}
-				if (breakpointFound) {
-					// now deleted all breakpoints on given file
-					const all = args.breakpoints.map(brk => {
-						return this.miDebugger.addBreakPoint({ file: path, line: brk.line, condition: brk.condition, countCondition: brk.hitCondition });
+				}				
+				// set all breakpoints on given file
+				const all = args.breakpoints.map(brk => {
+					return this.miDebugger.addBreakPoint({ file: path, line: brk.line, condition: brk.condition, countCondition: brk.hitCondition });
+				});
+				Promise.all(all).then(brkpoints => {
+					const finalBrks = [];
+					brkpoints.forEach(brkp => {
+						// TODO: Currently all breakpoints returned are marked as verified,
+						// which leads to verified breakpoints on a broken lldb.
+						if (brkp[0])
+							finalBrks.push(new DebugAdapter.Breakpoint(true, brkp[1].line));
 					});
-					Promise.all(all).then(brkpoints => {
-						const finalBrks = [];
-						brkpoints.forEach(brkp => {
-							// TODO: Currently all breakpoints returned are marked as verified,
-							// which leads to verified breakpoints on a broken lldb.
-							if (brkp[0])
-								finalBrks.push(new DebugAdapter.Breakpoint(true, brkp[1].line));
-						});
-						response.body = {
-							breakpoints: finalBrks
-						};
-						this.sendResponse(response);
-					}, msg => {
-						this.sendErrorResponse(response, 9, msg.toString());
-					});
-					return;
-				}
+					response.body = {
+						breakpoints: finalBrks
+					};
+					this.sendResponse(response);
+				}, msg => {
+					this.sendErrorResponse(response, 9, msg.toString());
+				});
+				return;				
 		  }
 			this.miDebugger.clearBreakPoints().then(() => {
 				let path = args.source.path;
@@ -298,7 +295,7 @@ export class MI2DebugSession extends DebugSession {
 			});
 		}).bind(this);
 		if (this.debugReady)
-			cb();
+			cb(true);
 		else
 			this.miDebugger.once("debug-ready", cb);
 	}
@@ -716,7 +713,7 @@ export class MI2DebugSession extends DebugSession {
 		const [threadId, level] = this.frameIdToThreadAndLevel(args.frameId);
 		if (args.context == "watch" || args.context == "hover") {
 			// use variable instead evalExpression - expression are also supported via varCreate
-			this.miDebugger.varCreate(args.expression).then((res)=> {
+			this.miDebugger.varCreate(args.expression,"-",threadId, level).then((res)=> {
 				const varId  = this.findOrCreateVariable(res);
 				const valueWithType = res.type+"-"+res.value; // I want to see the type immediately, not only on mouse hover variable name				
 				response.body = {

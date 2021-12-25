@@ -714,10 +714,16 @@ export class MI2 extends EventEmitter implements IBackend {
 		return await this.sendCommand(command);
 	}
 
-	async varCreate(expression: string, name: string = "-"): Promise<VariableObject> {
+	async varCreate(expression: string, name: string = "-",thread: number = 0, frame: number = 0): Promise<VariableObject> {
 		if (trace)
 			this.log("stderr", "varCreate");
-		const res = await this.sendCommand(`var-create ${name} @ "${expression}"`);
+
+		let miCommand = `var-create ${name} @ "${expression}"`;
+		if (thread != 0) {
+			miCommand = `var-create --frame ${frame} --thread ${thread} ${name} @ "${expression}"`;
+		}
+		// var-create ${name} @ "${expression}"		
+		const res = await this.sendCommand(miCommand);
 		return new VariableObject(res.result(""));
 	}
 
