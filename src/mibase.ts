@@ -575,7 +575,20 @@ export class MI2DebugSession extends DebugSession {
 						child.id = varId;
 						return child.toProtocolVariable();
 					});
-
+					if ((id.type.indexOf("string")>0 || id.type.indexOf("char")>0 || id.value.indexOf("\\n")>0) && id.value.indexOf("\"")>0) {
+						// looks like a string type and a value - show it again as child element for better readability
+						let lines:string[] = id.value.split("\\n");
+						for (let i=0;i<lines.length;i++) {
+							const strVar: DebugProtocol.Variable = {
+								name: `[${i}]`,
+								evaluateName: `[${i}]`,
+								value: lines[i],
+								type: "string",
+								variablesReference: 0
+							};
+							vars.push(strVar);
+						}						
+					}
 					response.body = {
 						variables: vars
 					};
