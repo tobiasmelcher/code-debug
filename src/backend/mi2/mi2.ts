@@ -197,11 +197,11 @@ export class MI2 extends EventEmitter implements IBackend {
 		//this.sendRaw("-gdb-set print object on");
 		if (!attach)
 			cmds.push(this.sendCommand("file-exec-and-symbols \"" + escape(target) + "\""));
-	  
+
 		if (this.prettyPrint)
 			cmds.push(this.sendCommand("enable-pretty-printing"));
 		// does rerun debug button work fine - are symbols hopefully not reloaded each time? No. But not needed, use "run" command in debug console.
-		
+
 		for (let cmd of this.extraCommands) {
 			cmds.push(this.sendCommand(cmd));
 		}
@@ -324,7 +324,7 @@ export class MI2 extends EventEmitter implements IBackend {
 	}
 
 	onOutput(lines) { // tm: hier you can see the unfiltered output of the gdb command
-		lines = <string[]> lines.split('\n'); 
+		lines = <string[]> lines.split('\n');
 		lines.forEach(line => {
 			if (couldBeOutput(line)) {
 				if (!gdbMatch.exec(line))
@@ -722,7 +722,7 @@ export class MI2 extends EventEmitter implements IBackend {
 		if (thread != 0) {
 			miCommand = `var-create --frame ${frame} --thread ${thread} ${name} @ "${expression}"`;
 		}
-		// var-create ${name} @ "${expression}"		
+		// var-create ${name} @ "${expression}"
 		const res = await this.sendCommand(miCommand);
 		return new VariableObject(res.result(""));
 	}
@@ -807,7 +807,9 @@ export class MI2 extends EventEmitter implements IBackend {
 						this.log("stderr", `WARNING: Error executing command '${command}'`);
 						resolve(node);
 					} else
-						reject(new MIError(node.result("msg") || "Internal error", command));
+					  // don't show error popup
+						//reject(new MIError(node.result("msg") || "Internal error", command));
+						resolve(node);
 				} else
 					resolve(node);
 			};
